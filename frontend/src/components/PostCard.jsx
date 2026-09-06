@@ -9,6 +9,7 @@ const PostCard = ({ post, currentUser, onPostUpdated }) => {
   const [comments, setComments] = useState(post.comments || []);
   const [likeLoading, setLikeLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
 
   // Check if current user has already liked this post
   const isLiked = currentUser
@@ -26,17 +27,15 @@ const PostCard = ({ post, currentUser, onPostUpdated }) => {
     setLikeLoading(true);
     const prevLikes = [...likes];
 
-    // ─── 1. Instant Optimistic UI Update (0ms delay) ─────────
+    // Optimistic UI Update (0ms delay)
     let updatedLikes;
     if (isLiked) {
-      // Unlike
       updatedLikes = likes.filter(
         (l) =>
           l.userId !== (currentUser._id || currentUser.id) &&
           l.username !== currentUser.username
       );
     } else {
-      // Like
       updatedLikes = [
         ...likes,
         {
@@ -51,7 +50,6 @@ const PostCard = ({ post, currentUser, onPostUpdated }) => {
       onPostUpdated({ ...post, likes: updatedLikes, comments });
     }
 
-    // ─── 2. Async Server Sync ────────────────────────────────
     try {
       const res = await toggleLike(post._id);
       if (res.data && res.data.likes) {
@@ -62,7 +60,6 @@ const PostCard = ({ post, currentUser, onPostUpdated }) => {
       }
     } catch (err) {
       console.error('Like toggle failed:', err);
-      // Revert on error
       setLikes(prevLikes);
       if (onPostUpdated) {
         onPostUpdated({ ...post, likes: prevLikes, comments });
@@ -80,98 +77,124 @@ const PostCard = ({ post, currentUser, onPostUpdated }) => {
   };
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return '';
+    if (!dateStr) return 'Aug 30';
     const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Recently';
     return d.toLocaleDateString(undefined, {
       month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: 'numeric'
     });
   };
 
   return (
     <>
-      <article className="post-card">
+      <article className="tp-post-card">
         {/* Post Author Header */}
-        <div className="post-header">
-          <div className="post-author-info">
-            <div className="avatar-circle">
-              {post.user?.username
-                ? post.user.username.charAt(0).toUpperCase()
-                : 'U'}
+        <div className="tp-post-header">
+          <div className="tp-post-author-wrap">
+            <div className="tp-post-avatar">
+              {post.user?.username ? post.user.username.charAt(0).toUpperCase() : 'U'}
             </div>
-            <div>
-              <h4 className="post-author-name">
-                👤 {post.user?.username || 'Anonymous'}
-              </h4>
-              <span className="post-timestamp">{formatDate(post.createdAt)}</span>
+            <div className="tp-post-meta">
+              <div className="tp-name-badge-row">
+                <span className="tp-author-name">
+                  {post.user?.username || 'TaskPlanet Member'}
+                </span>
+                <span className="tp-level-badge">
+                  <span className="tp-badge-num">7</span>
+                  <span className="tp-badge-crown">👑</span>
+                  <span className="tp-badge-title">Legend</span>
+                </span>
+              </div>
+              <div className="tp-handle-date-row">
+                <span className="tp-author-handle">@{post.user?.username || 'user'}</span>
+                <span className="tp-dot-sep">•</span>
+                <span className="tp-date-text">{formatDate(post.createdAt)}</span>
+              </div>
             </div>
+          </div>
+
+          {/* Right Header Actions */}
+          <div className="tp-header-actions">
+            <button
+              type="button"
+              className={`tp-btn-follow ${isFollowing ? 'following' : ''}`}
+              onClick={() => setIsFollowing(!isFollowing)}
+            >
+              {isFollowing ? 'Following' : 'Follow'}
+            </button>
+            <button type="button" className="tp-btn-more-options" title="Options">
+              •••
+            </button>
           </div>
         </div>
 
+        {/* Post Category Tag */}
+        <div className="tp-tag-row">
+          <span className="tp-campaign-tag">TaskPlanet Community</span>
+        </div>
+
         {/* Post Content */}
-        {post.content && <p className="post-text">{post.content}</p>}
+        {post.content && <p className="tp-post-text">{post.content}</p>}
 
         {/* Post Image */}
         {post.image && (
           <div
-            className="post-image-wrapper clickable-image"
+            className="tp-post-media-wrap"
             onClick={() => setIsModalOpen(true)}
-            title="Click to view full image"
+            title="Click to view full photo"
           >
             <img
               src={post.image}
               alt="Post attachment"
-              className="post-image"
+              className="tp-post-img"
               loading="lazy"
             />
           </div>
         )}
 
         {/* Stats Counter Bar */}
-        <div className="post-stats-bar">
+        <div className="tp-stats-bar">
           <span
-            className={`stat-item ${likes.length > 0 ? 'clickable' : ''}`}
+            className={`tp-stat-item ${likes.length > 0 ? 'clickable' : ''}`}
             onClick={() => {
               if (likes.length > 0) setShowLikersModal(true);
             }}
-            title={likes.length > 0 ? 'Click to see who liked this post' : ''}
+            title={likes.length > 0 ? 'See who liked this' : ''}
           >
             ❤️ {likes.length} {likes.length === 1 ? 'Like' : 'Likes'}
           </span>
           <span
-            className="stat-item clickable"
+            className="tp-stat-item clickable"
             onClick={() => setShowComments(!showComments)}
           >
             💬 {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
           </span>
         </div>
 
-        <hr className="post-divider" />
+        <hr className="tp-post-divider" />
 
-        {/* Action Buttons */}
-        <div className="post-actions-bar">
+        {/* Interactive Action Bar */}
+        <div className="tp-actions-row">
           <button
-            className={`btn-action-like ${isLiked ? 'liked' : ''}`}
+            className={`tp-btn-action-like ${isLiked ? 'liked' : ''}`}
             onClick={handleLike}
             disabled={likeLoading}
           >
-            <span className="like-icon">{isLiked ? '❤️' : '🤍'}</span>
+            <span className="tp-action-icon">{isLiked ? '❤️' : '🤍'}</span>
             <span>{isLiked ? 'Liked' : 'Like'}</span>
           </button>
 
           <button
-            className="btn-action-comment"
+            className="tp-btn-action-comment"
             onClick={() => setShowComments(!showComments)}
           >
-            <span className="comment-icon">💬</span>
+            <span className="tp-action-icon">💬</span>
             <span>Comment</span>
           </button>
         </div>
 
-        {/* Comments Section */}
+        {/* Comment Section Thread */}
         {showComments && (
           <CommentSection
             postId={post._id}
@@ -182,7 +205,7 @@ const PostCard = ({ post, currentUser, onPostUpdated }) => {
         )}
       </article>
 
-      {/* Likers List Modal */}
+      {/* Likers Modal */}
       {showLikersModal && (
         <div
           className="likers-modal-backdrop"
@@ -215,7 +238,7 @@ const PostCard = ({ post, currentUser, onPostUpdated }) => {
         </div>
       )}
 
-      {/* Full Size Image Modal / Lightbox */}
+      {/* Full-Size Image Modal / Lightbox */}
       {isModalOpen && (
         <div className="image-modal-backdrop" onClick={() => setIsModalOpen(false)}>
           <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>

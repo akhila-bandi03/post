@@ -5,6 +5,7 @@ const CreatePost = ({ onPostCreated, username }) => {
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [activeTab, setActiveTab] = useState('all'); // 'all' or 'promotions'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
@@ -12,9 +13,8 @@ const CreatePost = ({ onPostCreated, username }) => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Image file must be less than 5MB.');
+      if (file.size > 10 * 1024 * 1024) {
+        setError('Image file must be less than 10MB.');
         return;
       }
       setImageFile(file);
@@ -37,7 +37,7 @@ const CreatePost = ({ onPostCreated, username }) => {
 
     const trimmedContent = content.trim();
     if (!trimmedContent && !imageFile) {
-      setError('Please write something or attach an image.');
+      setError('Please enter some text or attach an image.');
       return;
     }
 
@@ -69,40 +69,53 @@ const CreatePost = ({ onPostCreated, username }) => {
   };
 
   return (
-    <div className="create-post-card">
-      <div className="create-post-header">
-        <div className="avatar-circle">
-          {username ? username.charAt(0).toUpperCase() : 'U'}
-        </div>
-        <div className="create-post-prompt">
-          <span className="create-post-title">What's on your mind?</span>
-          <span className="create-post-author">Posting as @{username}</span>
+    <div className="tp-create-card">
+      {/* Header with Title & Post Type Tabs */}
+      <div className="tp-create-header">
+        <h2 className="tp-create-title">Create Post</h2>
+        <div className="tp-create-tabs">
+          <button
+            type="button"
+            className={`tp-create-tab ${activeTab === 'all' ? 'active' : ''}`}
+            onClick={() => setActiveTab('all')}
+          >
+            All Posts
+          </button>
+          <button
+            type="button"
+            className={`tp-create-tab ${activeTab === 'promotions' ? 'active' : ''}`}
+            onClick={() => setActiveTab('promotions')}
+          >
+            Promotions
+          </button>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="create-post-form">
+      <form onSubmit={handleSubmit} className="tp-create-form">
         {error && <div className="alert alert-error">{error}</div>}
 
-        <textarea
-          id="post-content-input"
-          className="create-post-textarea"
-          placeholder="Write something..."
-          rows="3"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          disabled={loading}
-        />
+        <div className="tp-create-input-wrap">
+          <textarea
+            id="post-content-input"
+            className="tp-create-textarea"
+            placeholder="What's on your mind?"
+            rows="3"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            disabled={loading}
+          />
+        </div>
 
         {imagePreview && (
-          <div className="create-post-preview-container">
+          <div className="tp-create-preview-wrap">
             <img
               src={imagePreview}
               alt="Post preview"
-              className="create-post-preview-img"
+              className="tp-create-preview-img"
             />
             <button
               type="button"
-              className="btn-remove-preview"
+              className="tp-btn-remove-preview"
               onClick={handleRemoveImage}
               title="Remove image"
             >
@@ -111,28 +124,61 @@ const CreatePost = ({ onPostCreated, username }) => {
           </div>
         )}
 
-        <div className="create-post-footer">
-          <label htmlFor="post-image-file" className="btn-add-image">
-            <span className="icon">📷</span>
-            <span>{imageFile ? 'Change Image' : 'Add Image'}</span>
-          </label>
-          <input
-            id="post-image-file"
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={handleImageChange}
-            disabled={loading}
-          />
+        {/* Bottom Action Bar */}
+        <div className="tp-create-toolbar">
+          <div className="tp-toolbar-left">
+            <label
+              htmlFor="tp-post-image-file"
+              className="tp-tool-btn"
+              title="Add Photo"
+            >
+              <span className="tp-tool-icon">📷</span>
+            </label>
+            <input
+              id="tp-post-image-file"
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleImageChange}
+              disabled={loading}
+            />
+
+            <button
+              type="button"
+              className="tp-tool-btn"
+              title="Add Emoji"
+              onClick={() => setContent((prev) => prev + ' 😊')}
+            >
+              <span className="tp-tool-icon">😊</span>
+            </button>
+
+            <button
+              type="button"
+              className="tp-tool-btn"
+              title="Format List"
+              onClick={() => setContent((prev) => prev + '\n• ')}
+            >
+              <span className="tp-tool-icon">☰</span>
+            </button>
+
+            <button
+              type="button"
+              className="tp-btn-promote"
+              title="Promote Post"
+            >
+              <span>📢 Promote</span>
+            </button>
+          </div>
 
           <button
             id="submit-post-btn"
             type="submit"
-            className="btn-primary btn-post"
+            className="tp-btn-post-submit"
             disabled={loading || (!content.trim() && !imageFile)}
           >
-            {loading ? 'Posting...' : 'Post'}
+            <span className="tp-post-arrow">➤</span>
+            <span>{loading ? 'Posting...' : 'Post'}</span>
           </button>
         </div>
       </form>

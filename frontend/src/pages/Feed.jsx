@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Navbar from '../components/Navbar';
 import CreatePost from '../components/CreatePost';
 import PostCard from '../components/PostCard';
@@ -16,8 +16,10 @@ const Feed = () => {
     hasNextPage: false
   });
   const [loadingMore, setLoadingMore] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'for_you', 'most_liked', 'most_commented'
 
-  // Get current user from localStorage
+  // Current logged in user
   const storedUser = localStorage.getItem('user');
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
 
@@ -56,7 +58,6 @@ const Feed = () => {
   }, [fetchPosts]);
 
   const handlePostCreated = (newPost) => {
-    // Add new post to top of the feed immediately (newest first)
     setPosts((prev) => [newPost, ...prev]);
     setPagination((prev) => ({
       ...prev,
@@ -76,82 +77,183 @@ const Feed = () => {
     }
   };
 
+  // Filter & Search computation
+  const filteredPosts = useMemo(() => {
+    let result = [...posts];
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (p) =>
+          p.content?.toLowerCase().includes(q) ||
+          p.user?.username?.toLowerCase().includes(q)
+      );
+    }
+
+    if (activeFilter === 'most_liked') {
+      result.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
+    } else if (activeFilter === 'most_commented') {
+      result.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0));
+    }
+
+    return result;
+  }, [posts, searchQuery, activeFilter]);
+
   return (
-    <div className="feed-layout">
+    <div className="tp-feed-page">
       <Navbar username={currentUser?.username} />
 
-      <main className="feed-container">
-        <div className="feed-column">
-          {/* Create Post Section */}
-          <CreatePost
-            username={currentUser?.username || 'User'}
-            onPostCreated={handlePostCreated}
-          />
-
-          {/* Loading Indicator */}
-          {loading && (
-            <div className="loading-state">
-              <div className="spinner"></div>
-              <p>Loading your feed...</p>
+      <main className="tp-main-container">
+        {/* Search Bar Section */}
+        <div className="tp-search-bar-wrap">
+          <div className="tp-search-input-box">
+            <input
+              type="text"
+              className="tp-search-input"
+              placeholder="Search promotions, users, posts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <button className="tp-search-action-btn" title="Search">
+              <span>🔍</span>
+            </button>
+          </div>
+          <div className="tp-avatar-search-right">
+            <div className="tp-avatar-search-circle">
+              {currentUser?.username
+                ? currentUser.username.charAt(0).toUpperCase()
+                : 'U'}
             </div>
-          )}
-
-          {/* Error Message */}
-          {error && !loading && (
-            <div className="alert alert-error">
-              {error}
-              <button
-                className="btn-retry"
-                onClick={() => fetchPosts(1, false)}
-              >
-                Retry
-              </button>
-            </div>
-          )}
-
-          {/* Empty Feed State */}
-          {!loading && !error && posts.length === 0 && (
-            <div className="empty-feed-card">
-              <span className="empty-icon">📭</span>
-              <h3>No posts yet</h3>
-              <p>Be the first one to share an update or photo with the community!</p>
-            </div>
-          )}
-
-          {/* Posts Stream */}
-          {!loading && posts.length > 0 && (
-            <div className="posts-stream">
-              {posts.map((post) => (
-                <PostCard
-                  key={post._id}
-                  post={post}
-                  currentUser={currentUser}
-                  onPostUpdated={handlePostUpdated}
-                />
-              ))}
-
-              {/* Pagination / Load More Button */}
-              {pagination.hasNextPage && (
-                <div className="pagination-container">
-                  <button
-                    className="btn-load-more"
-                    onClick={handleLoadMore}
-                    disabled={loadingMore}
-                  >
-                    {loadingMore ? 'Loading more posts...' : 'Load More Posts'}
-                  </button>
-                </div>
-              )}
-
-              {!pagination.hasNextPage && posts.length > 0 && (
-                <div className="end-of-feed-msg">
-                  <span>🎉 You're all caught up!</span>
-                </div>
-              )}
-            </div>
-          )}
+          </div>
         </div>
+
+        {/* Create Post Card */}
+        <CreatePost
+          username={currentUser?.username || 'User'}
+          onPostCreated={handlePostCreated}
+        />
+
+        {/* Feed Filter Tabs */}
+        <div className="tp-filter-tabs-row">
+          <button
+            type="button"
+            className={`tp-filter-pill ${activeFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('all')}
+          >
+            All Post
+          </button>
+          <button
+            type="button"
+            className={`tp-filter-pill ${activeFilter === 'for_you' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('for_you')}
+          >
+            For You
+          </button>
+          <button
+            type="button"
+            className={`tp-filter-pill ${activeFilter === 'most_liked' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('most_liked')}
+          >
+            Most Liked
+          </button>
+          <button
+            type="button"
+            className={`tp-filter-pill ${activeFilter === 'most_commented' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('most_commented')}
+          >
+            Most Commented
+          </button>
+        </div>
+
+        {/* Loading Spinner */}
+        {loading && (
+          <div className="tp-loading-state">
+            <div className="tp-spinner"></div>
+            <p>Loading TaskPlanet feed...</p>
+          </div>
+        )}
+
+        {/* Error Alert */}
+        {error && !loading && (
+          <div className="alert alert-error">
+            {error}
+            <button className="btn-retry" onClick={() => fetchPosts(1, false)}>
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && filteredPosts.length === 0 && (
+          <div className="tp-empty-card">
+            <span className="tp-empty-icon">📭</span>
+            <h3>No posts found</h3>
+            <p>Be the first to share an update on the TaskPlanet social feed!</p>
+          </div>
+        )}
+
+        {/* Posts Stream */}
+        {!loading && filteredPosts.length > 0 && (
+          <div className="tp-posts-stream">
+            {filteredPosts.map((post) => (
+              <PostCard
+                key={post._id}
+                post={post}
+                currentUser={currentUser}
+                onPostUpdated={handlePostUpdated}
+              />
+            ))}
+
+            {pagination.hasNextPage && (
+              <div className="tp-pagination-wrap">
+                <button
+                  className="tp-btn-load-more"
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? 'Loading more...' : 'Load More Posts'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </main>
+
+      {/* Floating Create Action Button */}
+      <button
+        className="tp-fab-btn"
+        onClick={() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          document.getElementById('post-content-input')?.focus();
+        }}
+        title="Create New Post"
+      >
+        <span>+</span>
+      </button>
+
+      {/* TaskPlanet Bottom Navigation Bar */}
+      <nav className="tp-bottom-nav">
+        <div className="tp-nav-item">
+          <span className="tp-nav-icon">🏠</span>
+          <span className="tp-nav-label">Home</span>
+        </div>
+        <div className="tp-nav-item">
+          <span className="tp-nav-icon">📋</span>
+          <span className="tp-nav-label">Tasks</span>
+        </div>
+        <div className="tp-nav-item active">
+          <span className="tp-nav-icon">🌐</span>
+          <span className="tp-nav-label">Social</span>
+        </div>
+        <div className="tp-nav-item">
+          <span className="tp-nav-icon">🏆</span>
+          <span className="tp-nav-label">Leader Board</span>
+        </div>
+        <div className="tp-nav-item">
+          <span className="tp-nav-icon">💬</span>
+          <span className="tp-nav-label">Chat</span>
+        </div>
+      </nav>
     </div>
   );
 };

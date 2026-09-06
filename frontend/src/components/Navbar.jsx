@@ -11,36 +11,50 @@ const Navbar = ({ username }) => {
   };
 
   return (
-    <header className="navbar-container">
-      <div className="navbar-inner">
-        <Link to="/" className="navbar-logo">
-          <span className="logo-icon">📡</span>
-          <span className="logo-title">FeedConnect</span>
-        </Link>
+    <header className="tp-navbar">
+      <div className="tp-navbar-inner">
+        {/* Left: App Title / Logo */}
+        <div className="tp-brand-group">
+          <h1 className="tp-social-title">Social</h1>
+        </div>
 
-        <div className="navbar-actions">
+        {/* Right: TaskPlanet Stats & Profile */}
+        <div className="tp-header-right">
+          <div className="tp-stat-pill tp-star-pill" title="Reward Points">
+            <span className="tp-pill-num">50</span>
+            <span className="tp-pill-icon">⭐</span>
+          </div>
+
+          <div className="tp-stat-pill tp-wallet-pill" title="Wallet Balance">
+            <span className="tp-wallet-text">₹0.00</span>
+          </div>
+
+          <button className="tp-theme-toggle" title="Toggle Theme">
+            <span>🌙</span>
+          </button>
+
           {username ? (
-            <>
-              <div className="navbar-user-chip">
-                <span className="user-avatar-small">
+            <div className="tp-profile-group">
+              <div className="tp-avatar-ring" title={`Logged in as @${username}`}>
+                <div className="tp-avatar-inner">
                   {username.charAt(0).toUpperCase()}
-                </span>
-                <span className="navbar-username">@{username}</span>
+                </div>
               </div>
               <button
                 id="logout-button"
-                className="btn-logout"
+                className="tp-btn-logout"
                 onClick={handleLogout}
+                title="Logout"
               >
                 Logout
               </button>
-            </>
+            </div>
           ) : (
-            <div className="navbar-auth-links">
-              <Link to="/login" className="btn-secondary-link">
+            <div className="tp-auth-btns">
+              <Link to="/login" className="tp-btn-auth-sec">
                 Login
               </Link>
-              <Link to="/signup" className="btn-primary-link">
+              <Link to="/signup" className="tp-btn-auth-pri">
                 Sign Up
               </Link>
             </div>
