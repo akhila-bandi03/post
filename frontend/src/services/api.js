@@ -1,8 +1,11 @@
 import axios from 'axios';
 
-// Create Axios instance with base URL (supports live backend URL on Vercel)
+// Normalize Base URL (removes any accidental trailing slash)
+let rawBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+rawBaseUrl = rawBaseUrl.replace(/\/+$/, '');
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api'
+  baseURL: rawBaseUrl
 });
 
 // Attach JWT token to Authorization header for every request if available
@@ -23,7 +26,6 @@ export const getPosts = (page = 1, limit = 10) =>
   API.get(`/posts?page=${page}&limit=${limit}`);
 
 export const createPost = (formData) => {
-  // If formData is FormData instance (with file upload), axios handles multipart/form-data
   return API.post('/posts', formData);
 };
 

@@ -18,9 +18,12 @@ app.use(express.json());
 // Parse URL-encoded bodies (for multipart form data text fields)
 app.use(express.urlencoded({ extended: true }));
 
-// ─── Routes ──────────────────────────────────────────────────────────────────
+// ─── Routes (supports both /api/ prefix and direct prefix) ────────────────────
 app.use('/api/auth',  authRoutes);
+app.use('/auth',      authRoutes);
+
 app.use('/api/posts', postRoutes);
+app.use('/posts',     postRoutes);
 
 // ─── Health Check ────────────────────────────────────────────────────────────
 app.get('/', (req, res) => res.json({ message: 'FeedConnect API is running.' }));
