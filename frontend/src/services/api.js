@@ -1,8 +1,13 @@
 import axios from 'axios';
 
-// Normalize Base URL (removes any accidental trailing slash)
+// Get base URL from Vite environment or default to '/api'
 let rawBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
-rawBaseUrl = rawBaseUrl.replace(/\/+$/, '');
+rawBaseUrl = rawBaseUrl.trim().replace(/\/+$/, '');
+
+// If it is a full HTTP(S) URL and does not end with /api, append /api automatically
+if (rawBaseUrl.startsWith('http') && !rawBaseUrl.endsWith('/api')) {
+  rawBaseUrl = `${rawBaseUrl}/api`;
+}
 
 const API = axios.create({
   baseURL: rawBaseUrl
