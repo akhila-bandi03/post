@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Create Axios instance with base URL
+// Create Axios instance with base URL (supports live backend URL on Vercel)
 const API = axios.create({
-  baseURL: '/api'
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api'
 });
 
 // Attach JWT token to Authorization header for every request if available
